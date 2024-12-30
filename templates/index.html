@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Disease Predictor</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" rel="stylesheet"/>
+    <style>
+        :root {
+            --medical-blue: #005bab;
+            --medical-light-blue: #e8f4ff;
+            --medical-green: #36b9cc;
+            --medical-red: #dc3545;
+        }
+        
+        body {
+            background: linear-gradient(135deg, var(--medical-light-blue) 0%, #ffffff 100%);
+            height: 100vh;
+            margin: 0;
+            overflow: hidden;
+        }
+
+        .main-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 1rem;
+            height: 100vh;
+            display: grid;
+            grid-template-rows: auto 1fr auto;
+            gap: 1rem;
+        }
+
+        .header {
+            background: rgba(255, 255, 255, 0.9);
+            padding: 1rem;
+            border-radius: 10px;
+            box-shadow: 0 2px 15px rgba(0,91,171,0.1);
+            border-bottom: 3px solid var(--medical-blue);
+        }
+
+        .content-wrapper {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            height: 100%;
+        }
+
+        .predictor-card {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 1.5rem;
+            border-radius: 10px;
+            box-shadow: 0 2px 15px rgba(0,91,171,0.1);
+            transition: all 0.3s ease;
+        }
+
+        .predictor-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 20px rgba(0,91,171,0.2);
+        }
+
+        #results {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 10px;
+            box-shadow: 0 2px 15px rgba(0,91,171,0.1);
+            opacity: 0;
+            transition: all 0.5s ease;
+        }
+
+        #results.show {
+            opacity: 1;
+        }
+
+        .prediction-item {
+            padding: 1rem;
+            border-bottom: 1px solid rgba(0,91,171,0.1);
+            transition: all 0.3s ease;
+        }
+
+        .prediction-item:hover {
+            background: var(--medical-light-blue);
+        }
+
+        .select2-container--classic .select2-selection--multiple {
+            border-color: var(--medical-blue) !important;
+        }
+
+        .btn-predict {
+            background: var(--medical-blue);
+            color: white;
+            border: none;
+            padding: 0.8rem;
+            border-radius: 5px;
+            transition: all 0.3s ease;
+        }
+
+        .btn-predict:hover {
+            background: var(--medical-green);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(54,185,204,0.3);
+        }
+
+        .medical-icon {
+            color: var(--medical-blue);
+            margin-right: 0.5rem;
+        }
+
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        .footer {
+            text-align: center;
+            padding: 0.5rem;
+            color: var(--medical-blue);
+            font-size: 0.9rem;
+        }
+    </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"/>
+</head>
+<body>
+    <div class="main-container">
+        <div class="header animate__animated animate__fadeIn">
+            <h1 class="text-center">
+                <i class="fas fa-heartbeat medical-icon pulse"></i>
+                Medical Disease Predictor
+            </h1>
+            <p class="text-center text-muted mb-0">AI-Powered Diagnostic Assistant</p>
+        </div>
+
+        <div class="content-wrapper">
+            <div class="predictor-card animate__animated animate__fadeInLeft">
+                <form id="predictionForm">
+                    <div class="form-group">
+                        <label class="mb-2">
+                            <i class="fas fa-notes-medical medical-icon"></i>
+                            Select Symptoms
+                        </label>
+                        <select class="form-control" id="symptoms" name="symptoms" multiple="multiple">
+                            {% for symptom in symptoms %}
+                            <option value="{{ symptom }}">{{ symptom }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <button type="submit" class="btn-predict w-100 mt-3">
+                        <i class="fas fa-stethoscope"></i>
+                        Analyze Symptoms
+                    </button>
+                </form>
+            </div>
+
+            <div id="results" class="animate__animated animate__fadeInRight">
+                <div class="card-body">
+                    <h5 class="card-title mb-3">
+                        <i class="fas fa-file-medical medical-icon"></i>
+                        Diagnostic Results
+                    </h5>
+                    <div id="finalPrediction" class="prediction-item"></div>
+                    <div id="rfPrediction" class="prediction-item"></div>
+                    <div id="nbPrediction" class="prediction-item"></div>
+                    <div id="svmPrediction" class="prediction-item"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer animate__animated animate__fadeIn">
+            <i class="fas fa-hospital-user medical-icon"></i>
+            Powered by Advanced Machine Learning Algorithms
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <script>
+        $(document).ready(function() {
+            $('#symptoms').select2({
+                placeholder: 'Type to search symptoms...',
+                allowClear: true,
+                theme: "classic",
+                closeOnSelect: false
+            });
+
+            $('#predictionForm').on('submit', function(e) {
+                e.preventDefault();
+                
+                $.ajax({
+                    url: '/predict',
+                    type: 'POST',
+                    data: $(this).serialize(),
+                    success: function(response) {
+                        $('#results').addClass('show');
+                        $('#finalPrediction').html(`
+                            <strong><i class="fas fa-diagnoses medical-icon"></i>Final Diagnosis:</strong>
+                            <span class="text-primary"><a href="https://en.wikipedia.org/wiki/${response.final_prediction}">${response.final_prediction}</a></span>
+                        `).addClass('animate__animated animate__fadeIn');
+                        $('#rfPrediction').html(`
+                            <i class="fas fa-tree medical-icon"></i>
+                            <strong>Random Forest Analysis:</strong> ${response.rf_model_prediction}
+                        `);
+                        $('#nbPrediction').html(`
+                            <i class="fas fa-calculator medical-icon"></i>
+                            <strong>Naive Bayes Analysis:</strong> ${response.naive_bayes_prediction}
+                        `);
+                        $('#svmPrediction').html(`
+                            <i class="fas fa-brain medical-icon"></i>
+                            <strong>SVM Analysis:</strong> ${response.svm_model_prediction}
+                        `);
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>

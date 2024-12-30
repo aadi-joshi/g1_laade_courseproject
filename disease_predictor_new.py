@@ -75,9 +75,5 @@ def predictDisease(symptoms):
     
     return predictions
 
-# Testing the function
-predictions = predictDisease("Vomiting,Fatigue,Anxiety,Lethargy")
-
-# Only output the final predictions
-for model, prediction in predictions.items():
-    print(f"{model.replace('_', ' ').title()}: {prediction}")
+def get_all_symptoms():
+    return list(symptom_index.keys())
