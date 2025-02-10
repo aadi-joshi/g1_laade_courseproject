@@ -67,7 +67,7 @@ final_nb_model.fit(X_pca, y)
 final_rf_model.fit(X_pca, y)
 
 # Test data processing
-test_data = pd.read_csv("Testing2.csv").dropna(axis=1)
+test_data = pd.read_csv("Testing.csv").dropna(axis=1)
 test_X = test_data.iloc[:, :-1]
 test_Y = encoder.transform(test_data.iloc[:, -1])
 
